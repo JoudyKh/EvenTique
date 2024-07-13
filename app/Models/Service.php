@@ -17,7 +17,7 @@ class Service extends Model
         'discounted_packages',
         'activation',
         ];
-
+    public $translatable = ['name'];
     public function favorites(){
         return $this->belongsTo(Favorite::class);
     }
