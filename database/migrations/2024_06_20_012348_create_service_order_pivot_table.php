@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('service_order_pivot', function (Blueprint $table) {
             $table->id();
-            $table->enum('status', App\Constants\Constants::SERVICE_ORDER_STATUSES);
+            $table->json('status')->nullable();
             $table->timestamps();
         });
     }

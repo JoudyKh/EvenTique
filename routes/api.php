@@ -32,7 +32,7 @@ Route::controller(UserController::class)->group(function() {
     Route::post('resetPass','resetPass');
 });
 
-Route::middleware(['auth:sanctum'])->group(function() {
+Route::middleware(['auth:sanctum', 'locale'])->group(function() {
     Route::controller(UserController::class)->group(function() {
         Route::post('/login','login');
         Route::post('/logout','logout');
