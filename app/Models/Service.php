@@ -4,20 +4,25 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Translatable\HasTranslations;
 
 class Service extends Model
 {
-    use HasFactory;
+    use HasFactory, HasTranslations;
 
     protected $fillable = [
         'name',
         'price',
-        'image',
-        'discription',
+        'description',
         'discounted_packages',
         'activation',
-        ];
-    public $translatable = ['name'];
+        'category_id',
+        'company_id',
+    ];
+    public $translatable = [
+        'name',
+        'description',
+    ];
     public function favorites(){
         return $this->belongsTo(Favorite::class);
     }
@@ -28,5 +33,9 @@ class Service extends Model
 
     public function packages(){
         return $this->belongsToMany(Package::class , 'package_service_pivot');
+    }
+    public function images()
+    {
+        return $this->morphMany(Image::class, 'model');
     }
 }

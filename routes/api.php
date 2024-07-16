@@ -43,28 +43,31 @@ Route::middleware(['auth:sanctum'])->group(function() {
         Route::get('/loggedUser','logged_user');
         Route::post('/changeEmailOTP' , 'changeEmailOTP');
     });
-    Route::middleware(['locale'])->group(function() {
-        Route::controller(EventController::class)->group(function () {
-            Route::post('/insertEventType', 'insertEventType');
-            Route::post('/deleteEventType', 'deleteEventType');
-            Route::get('/showAllEventType', 'showAllEventType');
-        });
-        Route::controller(FavoriteController::class)->group(function () {
-            Route::post('/addFavorite', 'addFavorite');
-            Route::post('/deleteFavorite', 'deleteFavorite');
-            Route::get('/showfavorite', 'showfavorites');
-        });
-        Route::controller(CategoryController::class)->group(function () {
-            Route::post('/addCategory', 'addCategory');
-            Route::post('/deleteCategory', 'deleteCategory');
-            Route::post('/catServices', 'catServices');
-            Route::get('/showCategory', 'showCategory');
-        });
-        Route::controller(ServiceController::class)->group(function () {
-            Route::post('/addService', 'addService');
-            Route::post('/deleteService', 'deleteService');
-            Route::get('/showService/{id}', 'showService');
-        });
-    });
 });
+    Route::middleware(['locale'])->group(function() {
+        Route::apiResource('/services', ServiceController::class);
+        Route::post('/services/{service}/update-activation', [ServiceController::class, 'updateActivation']);
+        // Route::controller(EventController::class)->group(function () {
+        //     Route::post('/insertEventType', 'insertEventType');
+        //     Route::post('/deleteEventType', 'deleteEventType');
+        //     Route::get('/showAllEventType', 'showAllEventType');
+        // });
+        // Route::controller(FavoriteController::class)->group(function () {
+        //     Route::post('/addFavorite', 'addFavorite');
+        //     Route::post('/deleteFavorite', 'deleteFavorite');
+        //     Route::get('/showfavorite', 'showfavorites');
+        // });
+        // Route::controller(CategoryController::class)->group(function () {
+        //     Route::post('/addCategory', 'addCategory');
+        //     Route::post('/deleteCategory', 'deleteCategory');
+        //     Route::post('/catServices', 'catServices');
+        //     Route::get('/showCategory', 'showCategory');
+        // });
+        // Route::controller(ServiceController::class)->group(function () {
+        //     Route::post('/addService', 'addService');
+        //     Route::post('/deleteService', 'deleteService');
+        //     Route::get('/showService/{id}', 'showService');
+        // });
+    });
+
 

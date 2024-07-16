@@ -1,50 +1,81 @@
 <?php
 
 namespace App\Http\Controllers;
+use App\Http\Requests\Service\CreateServiceRequest;
+use App\Http\Requests\Service\UpdateServiceActivationRequest;
+use App\Http\Requests\Service\UpdateServiceRequest;
+use App\Http\Resources\ServiceResource;
 use App\Models\Service;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 
 class ServiceController extends Controller
 {
-    public function addService(Request $request){
-        //$user = auth()->user();
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'price' => ['required', 'digits:10', 'numeric'],
-            'discription' => ['required', 'string', 'max:255'],
-            'companies_id' => ['required', 'string', 'max:255'],
-            'categories_id' => ['required', 'string', 'max:255'],
-        ]);
-        Service::create([
-            'name' => $request->name,
-            'price' => $request->price,
-            'discription' => $request->discription,
-            'discounted_packages' => $request->discounted_packages,
-            'activation' => $request->activation,
-            'categories_id' => $request->categories_id,
-            'companies_id' => $request->companies_id
-        ]);
-        return response([
-            'message' => 'insert Success'
-        ], 200);
+    public function index()
+    {
+       return ServiceResource::collection(Service::paginate(10));
+    }
+    public function store(CreateServiceRequest $request)
+    {
+        $data = $request->validated();
+        // $data['company_id'] = Auth::user()->id;
+        $data['discounted_packages'] = $data['discounted_packages'] ?? 0;  
+        $data['activation'] = $data['activation'] ?? 1;  
+        foreach (config('app.locales') as $locale) {
+            $data['name'][$locale] = $data[$locale . '_name'];
+            $data['description'][$locale] = $data[$locale . '_description'];
+        }
+        $service = Service::create($data);
+        foreach($data['images'] as $image){
+            $service->images()->create(['url' => $image]);
+        }
+        return success(new ServiceResource($service));        
+    }
+    public function show(Service $service)
+    {
+        return success(new ServiceResource($service));
+    }
+    public function update(UpdateServiceRequest $request, Service $service)
+    {
+        $data = $request->validated();
+        foreach (config('app.locales') as $locale) {
+            if(isset($data[$locale . '_name']))
+                $data['name'][$locale] = $data[$locale . '_name'];
+            if(isset($data[$locale . '_description']))
+                $data['description'][$locale] = $data[$locale . '_description'];
+        }
+        if(isset($data['images'])){
+            foreach($data['images'] as $image)
+                $service->images()->create(['url' => $image]);
+        }
+        if(isset($data['remove_images']) && count($service->images) > 1)
+            $service->images()->whereIn('id', $data['remove_images'])->delete();
+        $service->update($data);
+        return success(new ServiceResource($service));
+    }
+    public function updateActivation(UpdateServiceActivationRequest $request,Service $service)
+    {
+        $data = $request->validated();
+        // if($service->company_id == Auth::user()->id)
+
+        // delete this condition
+        if($service->category_id == 5){
+            $service->update($data);
+            return success(new ServiceResource($service));
+        }
+        else{
+            return error('Invalid service id');
+        }
+    }
+    public function destroy (Service $service)
+    {
+        if($service->company_id == Auth::user()->id){
+            $service->delete();
+            return success();
+        }
+        else{
+            return error('Invalid service id');
+        }
     }
 
-    public function deleteService (Request $request){
-        //$user = auth()->user();
-        $ser = Service::where('name', $request->name)->first();
-        $ser->delete();
-        return response([
-            'message' => 'delete Success'
-        ], 200);
-    }
-
-    public function showService($id){
-        //$user = auth()->user();
-        $ser = Service::where('id', $id)->first();
-        return response([
-            'message' => 'Success',
-            $ser
-        ], 200);
-    }
 }

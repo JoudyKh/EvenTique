@@ -15,11 +15,16 @@ return new class extends Migration
             $table->id();
             $table->json('name');
             $table->integer('price');
-            $table->json('discription');
+            $table->json('description');
             $table->boolean('discounted_packages')->default(0);
             $table->boolean('activation')->default(1);
-            $table->foreignId('categories_id');
-            $table->foreignId('companies_id');
+            $table->foreignId('category_id')
+            ->constrained('categories')
+            ->onUpdate('cascade');
+            // $table->foreignId('company_id')
+            // ->constrained('companies')
+            // ->onDelete('cascade')
+            // ->onUpdate('cascade');
             $table->timestamps();
         });
     }
