@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Kreait\Firebase\Auth as FirebaseAuth;
 
 class User extends Authenticatable //implements MustVerifyEmail
 {
@@ -44,9 +45,23 @@ class User extends Authenticatable //implements MustVerifyEmail
         'email_verified_at' => 'datetime',
     ];
 
+    public function getFirebaseAuth()
+    {
+        return app(FirebaseAuth::class);
+    }
+
+    public function createCustomToken()
+    {
+        $firebaseAuth = $this->getFirebaseAuth();
+        $customToken = $firebaseAuth->createCustomToken($this->id);
+        return $customToken->toString();
+    }
 
     public function favorites(){
         return $this->hasMany(Favorite::class , 'user_id');
     }
-
+    public function images()
+    {
+        return $this->morphMany(Image::class, 'model');
+    }
 }

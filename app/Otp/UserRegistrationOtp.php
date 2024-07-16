@@ -20,7 +20,8 @@ class UserRegistrationOtp implements Otp
     public function __construct(
         protected string $name,
         protected string $email,
-        protected string $password
+        protected string $password,
+
     ) {
     }
 
