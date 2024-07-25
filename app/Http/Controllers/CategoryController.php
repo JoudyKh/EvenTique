@@ -2,46 +2,54 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\CategoryRecource;
+use App\Http\Resources\ServiceResource;
 use App\Models\Category;
 use App\Models\Favorite;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Stichoza\GoogleTranslate\GoogleTranslate;
 
 class CategoryController extends Controller
 {
-    //$category->drugs()->attach($drugId);
-    public function addCategory(Request $request){
-        //$user = auth()->user();
-        Category::create([
-            'name' => $request->name
+
+    public function store(Request $request){
+        $request->validate([
+            'name' => ['required'],
         ]);
-        return response([
-            'message' => 'insert Success'
-        ], 200);
+        $admin = auth()->user();
+        $currentLocale = app()->getLocale();
+        $targetLocale = ($currentLocale === 'en') ? 'ar' : 'en';
+
+        $lang = new GoogleTranslate($currentLocale);
+        $lang->setSource($currentLocale)->setTarget($targetLocale);
+
+        $request->name = [
+            $currentLocale => $request->name,
+            $targetLocale => $lang->translate($request->name)
+        ];
+        if($admin) {
+            Category::create([
+                'name' => $request->name
+            ]);
+            return success();
+        }
+        return error('invaled Auth');
     }
 
-    public function deleteCategory (Request $request){
-        //$user = auth()->user();
-        $cat = Category::where('name', $request->name)->first();
+    public function index(){
+        return CategoryRecource::collection(Category::all());
+    }
+
+    public function show($id){
+        $cat = Category::where('id', $id)->first();
+        return success($cat->services);
+    }
+
+    public function deleteCategory ($id){
+        $admin = auth()->user();
+        $cat = Category::where('id', $id)->first();
         $cat->delete();
-        return response([
-            'message' => 'delete Success'
-        ], 200);
-    }
-
-    public function showCategory(){
-        //$user = auth()->user();
-        $cat = Category::all();
-        return response([
-                'message' => 'Success',
-                $cat
-            ], 200);
-    }
-    public function catServices(Request $request){
-        $cat = Category::where('name', $request->name)->first();
-        return response([
-            'message' => 'Success',
-            $cat->services
-        ], 200);
+        return success();
     }
 }

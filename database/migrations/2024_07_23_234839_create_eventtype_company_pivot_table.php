@@ -11,10 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('category_company_pivot', function (Blueprint $table) {
+        Schema::create('eventtype_company_pivot', function (Blueprint $table) {
             $table->id();
             $table->foreignId('company_id')->constrained('companies');
-            $table->foreignId('category_id')->constrained('categories');
+            $table->foreignId('event_type_id')->constrained('event_types');
             $table->timestamps();
         });
     }
@@ -24,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('category_company_pivot');
+        Schema::dropIfExists('eventtype_company_pivot');
     }
 };

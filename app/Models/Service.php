@@ -28,12 +28,17 @@ class Service extends Model
     }
 
     public function events(){
-        return $this->belongsToMany(Event::class , 'event_service_pivot');
+        return $this->belongsToMany(Event::class , 'event_service', 'service_id', 'event_id');
     }
 
     public function packages(){
         return $this->belongsToMany(Package::class , 'package_service_pivot');
     }
+
+    public function reviews(){
+        return $this->hasMany(Review::class , 'service_id');
+    }
+
     public function images()
     {
         return $this->morphMany(Image::class, 'model');

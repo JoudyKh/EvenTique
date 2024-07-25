@@ -13,6 +13,8 @@ return new class extends Migration
     {
         Schema::create('company_wallets', function (Blueprint $table) {
             $table->id();
+            $table->integer('amount')->default(0);
+            $table->foreignId('company_id')->constrained('companies');
             $table->timestamps();
         });
     }

@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\CompanyResource;
 use App\Models\User;
+use App\Models\UserWallet;
 use App\Otp\UserRegistrationOtp;
 use App\Otp\UserOperationsOtp;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -32,9 +35,9 @@ class UserController extends Controller
             ], 200);
         }
 
-        $request->session()->put('user_email', $request->email);
-        $request->session()->put('user_name', $request->name);
-        $request->session()->put('user_pass', $request->password);
+//        $request->session()->put('user_email', $request->email);
+          $request->session()->put('user_name', $request->name);
+          $request->session()->put('user_pass', $request->password);
 
         $otp = Otp::identifier($request->email)->send(
             new UserRegistrationOtp(
@@ -44,13 +47,10 @@ class UserController extends Controller
             ),
             Notification::route('mail', $request->email)
         );
-        return response([
-            'message' => 'Registration Success',
-            'status'=>'success',
+        return success($otp['status'], Response::HTTP_OK, [
             'email' => $request->email,
             'image' => $request->image,
-            $otp['status']
-        ], 201);
+        ]);
     }
 
     public function login(Request $request){
@@ -62,17 +62,12 @@ class UserController extends Controller
         if($user && Hash::check($request->password, $user->password)){
             $token = $user->createToken("Login Token")->plainTextToken;
             $firebaseToken = $user->createCustomToken($user->id);
-            return response([
-                'message' => 'Login Success',
+            return success($user, Response::HTTP_OK, [
                 'loginToken'=> $token,
                 'firebaseToken'=> $firebaseToken,
-                $user
-            ], 200);
+            ]);
         }
-        return response([
-            'message' => 'wrong information check your email and password and do not forget to register first',
-            'status'=>'failed'
-        ], 401);
+        return error('wrong information check your email and password');
     }
 
     public function logout(Request $request){
@@ -135,19 +130,17 @@ class UserController extends Controller
             $registerToken = $user->createToken($email)->plainTextToken;
             $firebaseToken = $user->createCustomToken($user->id);
             $userInfo = User::with('images')->where('email', $email)->first();
-            session()->flush();
-            return response([
-                'message' => 'registration verified successfully.',
-                'status' => 'success',
-                $userInfo,
+            //session()->flush();
+            UserWallet::create([
+                'user_id'=>$user->id
+            ]);
+            return success($userInfo, Response::HTTP_OK, [
                 'rigistertoken' => $registerToken,
                 'logginToken' => $user->createToken("Login Token")->plainTextToken,
                 'firebaseToken' => $firebaseToken,
-            ], 200);
+            ]);
         }
-        return response([
-            'message' => 'registration verified failed.'
-        ], 500);
+        return error('registration verified failed');
     }
 
     public function verAuthOTP (Request $request){
@@ -174,10 +167,7 @@ class UserController extends Controller
                  'created_at'=>Carbon::now()
              ]);
             session()->flush();
-             return response([
-                 'message'=>'forget password verified successfully',
-                 'status'=>'success'
-             ], 200);
+             return success();
 
         }else{ //change email
 
@@ -191,90 +181,44 @@ class UserController extends Controller
             ], 200);
         }
     }
-//    public function verRegistereOTP (Request $request){
-//        $request->validate([
-//            'code'  => ['required', 'string']
-//        ]);
-//
-//        $email = $request->session()->get('user_email');
-//        $user = User::where('email',$email)->first();
-//
-//        //user register case
-//        if (!$user) {
-//            $otp = Otp::identifier($email)->attempt($request->code);
-//            if ($otp['status'] != Otp::OTP_PROCESSED) {
-//                abort(403, __($otp['status']));
-//            }
-//            $user = User::where('email', $email)->first();
-//            //$registerToken =
-//            return response()->json([
-//                'message' => 'registration verified successfully.',
-//                'status' => 'success',
-//                'token' => $user->createToken($email)->plainTextToken
-//            ], 200);
-//        }
-//        //forget password case
-//        else{
-//            $otp = Otp::identifier($email)->attempt($request->code);
-//            if ($otp['status'] != Otp::OTP_PROCESSED) {
-//                abort(403, __($otp['status']));
-//            }
-//            $forgetToken = Str::random(60);
-//            DB::table('password_reset_tokens')->insert([
-//                'email'=>$email,
-//                'token'=>$forgetToken,
-//                'created_at'=>Carbon::now()
-//            ]);
-//            return response([
-//                'message'=>'password verified successfully',
-//                'status'=>'success'
-//            ], 200);
-//        }
-//    }
 
     public function sendOTP (Request $request){
         $request->validate([
             'email'    => ['required', 'string', 'email', 'max:255']
         ]);
-        $request->session()->put('user_email', $request->email);
-        $name = $request->session()->get('user_name');
-        $pass = $request->session()->get('user_pass');
+//        $request->session()->put('user_email', $request->email);
+         $name = $request->session()->get('user_name');
+         $pass = $request->session()->get('user_pass');
 
         $usercheck = User::where('email',$request->email)->first();
         //send registration otp
         if (!$usercheck) {
             $otp = Otp::identifier($request->email)->send(
                 new UserRegistrationOtp(
-                    name: $name,
+                    name: $name->name,
                     email: $request->email,
-                    password: $pass,
+                    password: $pass->pass,
                 ),
                 Notification::route('mail', $request->email)
             );
-            return response([
-                'message' => 'sending otp for user registration',
-                'status' => 'success',
-                'email' => $request->email,
-                $otp['status']
-            ], 200);
+            session()->flush();
+            return success($otp['status'], Response::HTTP_OK, [
+                'email' => $request->email
+            ]);
 
         }else{   // send forget password otp
 
             $user = USER::where('email',$request->email)->first();
             $otp = Otp::identifier($request->email)->send(
                 new UserOperationsOtp(
-                    name: $usercheck->name,
+                    name: $user->name,
                     email: $user->email,
-                    password: $usercheck->password,
+                    password: $user->password,
                 ),
                 Notification::route('mail', $request->email)
             );
-            return response([
-                'message'=>'sending otp for forget password',
-                'status'=>'success',
-                'email' => $request->email,
-                $otp['status']
-            ], 200); }
+            return success($otp['status']);
+        }
     }
 
     public function resetPass (Request $request){
@@ -353,20 +297,15 @@ class UserController extends Controller
     }
     public function changeEmailOTP(Request $request){
         $request->validate([
-            'password' => ['required', 'min:6' , 'max:14'],
             'email'    => ['required', 'string', 'email', 'max:255']
         ]);
 
         $userAuth = auth()->user();
-        if(Hash::check($request->password, $userAuth->password)){
-
-            $user = User::where('email', $request->email)->first();
-            if ($user) {
-                return response([
-                    'message' => 'sorry , email dosent available'
-                ], 500);
+        $user = User::where('email', $request->email)->first();
+        if ($user) {
+            return error('sorry , email dosent available');
             }
-            $request->session()->put('user_email', $request->email);
+            //$request->session()->put('user_email', $request->email);
             $otp = Otp::identifier($request->email)->send(
                 new UserOperationsOtp(
                     name: $userAuth->name,
@@ -375,15 +314,6 @@ class UserController extends Controller
                 ),
                 Notification::route('mail', $request->email)
             );
-            return response([
-                'message' => 'sending otp for change email',
-                'status' => 'success',
-                $otp['status']
-            ], 200);
-    }
-        return response([
-            'message' => 'sorry , your password is wrong , please try again',
-            'status' => 'failed',
-        ], 500);
+            return success($otp['status']);
     }
 }

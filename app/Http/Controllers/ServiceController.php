@@ -6,7 +6,9 @@ use App\Http\Requests\Service\UpdateServiceActivationRequest;
 use App\Http\Requests\Service\UpdateServiceRequest;
 use App\Http\Resources\ServiceResource;
 use App\Models\Service;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
+use Stichoza\GoogleTranslate\GoogleTranslate;
 
 
 class ServiceController extends Controller
@@ -18,18 +20,29 @@ class ServiceController extends Controller
     public function store(CreateServiceRequest $request)
     {
         $data = $request->validated();
+        $currentLocale = app()->getLocale();
+        $targetLocale = ($currentLocale === 'en') ? 'ar' : 'en';
+
+        $lang = new GoogleTranslate($currentLocale);
+        $lang->setSource($currentLocale)->setTarget($targetLocale);
+
+        $data['name'] = [
+            $currentLocale => $data['name'],
+            $targetLocale => $lang->translate($data['name'])
+        ];
+        $data['description'] = [
+            $currentLocale => $data['description'],
+            $targetLocale => $lang->translate($data['description'])
+        ];
+
         // $data['company_id'] = Auth::user()->id;
-        $data['discounted_packages'] = $data['discounted_packages'] ?? 0;  
-        $data['activation'] = $data['activation'] ?? 1;  
-        foreach (config('app.locales') as $locale) {
-            $data['name'][$locale] = $data[$locale . '_name'];
-            $data['description'][$locale] = $data[$locale . '_description'];
-        }
+        $data['discounted_packages'] = $data['discounted_packages'] ?? 0;
+        $data['activation'] = $data['activation'] ?? 1;
         $service = Service::create($data);
         foreach($data['images'] as $image){
             $service->images()->create(['url' => $image]);
         }
-        return success(new ServiceResource($service));        
+        return success(new ServiceResource($service));
     }
     public function show(Service $service)
     {
@@ -38,12 +51,23 @@ class ServiceController extends Controller
     public function update(UpdateServiceRequest $request, Service $service)
     {
         $data = $request->validated();
-        foreach (config('app.locales') as $locale) {
-            if(isset($data[$locale . '_name']))
-                $data['name'][$locale] = $data[$locale . '_name'];
-            if(isset($data[$locale . '_description']))
-                $data['description'][$locale] = $data[$locale . '_description'];
-        }
+        $currentLocale = app()->getLocale();
+        $targetLocale = ($currentLocale === 'en') ? 'ar' : 'en';
+
+        $lang = new GoogleTranslate($currentLocale);
+        $lang->setSource($currentLocale)->setTarget($targetLocale);
+            if(isset($data['name']))
+                $data['name'] = [
+                    $currentLocale => $data['name'],
+                    $targetLocale => $lang->translate($data['name'])
+                ];
+
+            if(isset($data['description']))
+            $data['description'] = [
+                $currentLocale => $data['description'],
+                $targetLocale => $lang->translate($data['description'])
+            ];
+
         if(isset($data['images'])){
             foreach($data['images'] as $image)
                 $service->images()->create(['url' => $image]);
@@ -67,15 +91,23 @@ class ServiceController extends Controller
             return error('Invalid service id');
         }
     }
-    public function destroy (Service $service)
+    public function destroy(Service $service)
     {
-        if($service->company_id == Auth::user()->id){
+        // set this condition when prepared
+        // if($service->company_id == Auth::user()->id){
+            $service->images()->delete();
             $service->delete();
             return success();
-        }
-        else{
-            return error('Invalid service id');
-        }
+        // }
+        // else{
+        //     return error('Invalid service id');
+        // }
+    }
+
+    public function indexByCategory(Category $category)
+    {
+        $services = $category->services()->withAvg('reviews','rete')->paginate(10);
+        return success(ServiceResource::collection($services));
     }
 
 }

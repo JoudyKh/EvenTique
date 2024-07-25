@@ -16,11 +16,16 @@ return new class extends Migration
             $table->string('name');
             $table->date('date');
             $table->time('time');
-            $table->integer('pudget');
+            $table->integer('budget');
             $table->integer('guests');
             $table->enum('status', ['planning','completed'])->default('planning');
-            $table->foreignId('event_type_id')->constrained('event_types');
-            $table->foreignId('user_id')->constrained('users');
+            $table->foreignId('event_type_id')
+            ->constrained('event_types')
+            ->onUpdate('cascade');
+            $table->foreignId('user_id')
+            ->constrained('users')
+            ->onDelete('cascade')
+            ->onUpdate('cascade');
             $table->timestamps();
         });
     }

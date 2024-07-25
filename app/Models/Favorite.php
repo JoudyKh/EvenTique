@@ -9,6 +9,11 @@ class Favorite extends Model
 {
     use HasFactory;
 
+    protected $fillable = [
+        'user_id',
+        'service_id'
+    ];
+
     public function services(){
         return $this->hasOne(Service::class);
     }

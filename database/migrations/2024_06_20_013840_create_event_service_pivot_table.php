@@ -11,8 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('event_service_pivot', function (Blueprint $table) {
+        Schema::create('event_service', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('event_id')
+            ->constrained('events')
+            ->onDelete('cascade')
+            ->onUpdate('cascade');
+            $table->foreignId('service_id')
+            ->constrained('services')
+            ->onDelete('cascade')
+            ->onUpdate('cascade');
             $table->timestamps();
         });
     }
@@ -22,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('event_service_pivot');
+        Schema::dropIfExists('event_service');
     }
 };

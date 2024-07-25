@@ -16,17 +16,15 @@ return new class extends Migration
             $table->string('first_name');
             $table->string('last_name');
             $table->string('email');
-            $table->integer('password');
+            $table->string('password');
             $table->integer('phone_number');
             $table->string('company_name');
             $table->integer('registration_number');
             $table->json('location');
             $table->json('city');
             $table->json('country');
-            $table->string('days');
             $table->json('description');
             $table->boolean('accept_privacy')->default(0);
-            $table->foreignId('event_type_id')->constrained('event_types');
             $table->timestamps();
         });
     }

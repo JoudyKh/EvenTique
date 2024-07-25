@@ -13,9 +13,11 @@ return new class extends Migration
     {
         Schema::create('work_hours', function (Blueprint $table) {
             $table->id();
-            $table->json('day_name');
-            $table->integer('hours_from');
-            $table->integer('hours_to');
+            //$table->foreignId('days_id')->constrained('days');
+            $table->json('day');
+            $table->string('hours_from',5);
+            $table->string('hours_to',5);
+            $table->foreignId('company_id')->constrained('companies');
             $table->timestamps();
         });
     }

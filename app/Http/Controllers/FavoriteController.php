@@ -9,39 +9,29 @@ use Illuminate\Support\Facades\DB;
 
 class FavoriteController extends Controller
 {
-    public function addFavorite(Request $request){
+    public function store(Request $request){
         $user = auth()->user();
         Favorite::create([
             'user_id' => $user->id,
             'service_id' => $request->service_id
         ]);
-        return response([
-            'message' => 'insert Success'
-        ], 200);
+        return success();
     }
 
-    public function deleteFavorite(Request $request){
+    public function destroy($id){
         $user = auth()->user();
         $fav = Favorite::where('user_id', $user->id)
-            ->where('service_id', $request->service_id)
+            ->where('service_id', $id)
             ->first();
         $fav->delete();
-        return response([
-            'message' => 'delete Success'
-        ], 200);
+        return success();
     }
 
-    public function showfavorite(){
+    public function index(){
         $user = auth()->user();
-        $show =User::find($user->id);
-        if($show){
-            return response([
-                'message' => 'Success',
-                $show->favorites
-            ], 200);
+        if($user){
+            return success($user->favorites);
         }
-        return response([
-            'message' => 'failed'
-        ], 500);
+        return error('Invalid Auth');
     }
 }

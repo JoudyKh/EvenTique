@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Requests\Service;
+namespace App\Http\Requests\EventType;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class UpdateServiceRequest extends FormRequest
+class CreateEvTyRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,14 +22,7 @@ class UpdateServiceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'price' => 'numeric',
-            'category_id' => 'exists:categories,id',
-            'name' => '',
-            'description' => '',
-            'discounted_packages' => 'boolean',
-            'images' => 'array',
-            'remove_images' => 'array',
-            'remove_images.*' => 'exists:images,id,model_id, ' . $this->route('service')->id,
+            'name' => 'required',
         ];
     }
 }

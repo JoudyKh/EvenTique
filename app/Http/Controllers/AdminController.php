@@ -13,171 +13,92 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use SadiqSalau\LaravelOtp\Facades\Otp;
+use Illuminate\Http\Response;
 
 class AdminController extends Controller
 {
-    public function login(Request $request){
-        $request->validate([
-            'email'=>'required|email',
-            'password'=>'required|min:6|max:14',
+    public function admin(Request $request){
+        $admin = Admin::create([
+            'email'=>$request->email,
+            'password'=>Hash::make($request->password)
         ]);
-        $admin = Admin::find(1);
-        if($admin && Hash::check($request->password, $admin->password)){
-            $token = $admin->createToken("Admin Login Token")->plainTextToken;
-            return response([
-                'token'=>$token,
-                'message' => 'Login Success',
-                'status'=>'success',
-                $admin
-            ], 200);
+        $registerToken = $admin->createToken($admin->email)->plainTextToken;
+        return $registerToken;
+    }
+    public function login(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|min:6|max:14',
+        ]);
+        $admin = Admin::where('email', $request->email)->first();
+        if ($admin && Hash::check($request->password, $admin->password)) {
+
+            return success(null, Response::HTTP_OK, [
+                'loggintoken' => $admin->createToken("admin Login Token")->plainTextToken
+            ]);
         }
-        return response([
-            'message' => 'wrong information check your email and password and do not forget to register first',
-            'status'=>'failed'
-        ], 401);
+        return error('wrong information check your email and password');
     }
 
-    public function verOTP (Request $request){
+    public function logout(){
+        $admin = auth()->user();
+        $admin->currentAccessToken()->delete();
+        return success();
+    }
+
+    public function verAuthOTP (Request $request){
         $request->validate([
             'code'  => ['required', 'string']
         ]);
+        $admin = Admin::first();
 
-        $email = $request->email;
-        $admin = Admin::where('email',$email)->first();
-        $loggedUser = auth()->user();
-
-        $otp = Otp::identifier($email)->attempt($request->code);
+        $otp = Otp::identifier($admin->email)->attempt($request->code);
         if ($otp['status'] != Otp::OTP_PROCESSED) {
             abort(403, __($otp['status']));
         }
 
         if ($admin) { // forget password verify
-
-            $forgetToken = Str::random(60);
             DB::table('password_reset_tokens')->insert([
-                'email'=>$email,
-                'token'=>$forgetToken,
+                'email'=>$admin->email,
+                'token'=>$forgetToken = Str::random(60),
                 'created_at'=>Carbon::now()
             ]);
-            return response([
-                'message'=>'forget password verified successfully',
-                'status'=>'success'
-            ], 200);
-
-        }else{ //change email
-
-            $loggedUser->update([
-                'email' => $email ]);
-            return response([
-                'message'=>'change email verified successfully',
-                'status'=>'success'
-            ], 200);
+            return success($otp['status']);
         }
     }
 
-    public function sendOTP (Request $request){
-        $request->validate([
-            'email'    => ['required', 'string', 'email', 'max:255']
-        ]);
-            $admin = Admin::find(1);
-            $otp = Otp::identifier($request->email)->send(
+    public function sendOTP (){
+        // send forget password otp
+        $admin = Admin::first();
+        if($admin) {
+            $otp = Otp::identifier($admin->email)->send(
                 new UserOperationsOtp(
                     name: $admin->name,
-                    email: $request->email,
+                    email: $admin->email,
                     password: $admin->password,
                 ),
-                Notification::route('mail', $request->email)
+                Notification::route('mail', $admin->email)
             );
-            return response([
-                'message'=>'sending otp for forget password',
-                'status'=>'success',
-                'email' => $request->email,
-                $otp['status']
-            ], 200); }
+            return success($otp['status']);
+        }
+        return error('check your email');
+    }
 
 
     public function resetPass (Request $request){
         $request->validate([
             'password' => ['required', 'min:6' , 'max:14' , 'confirmed']
         ]);
-        $email = $request->email;
-        $admin = Admin::where('email', $email)->first();
-        if(Hash::check($request->password,$admin->password)) {
-            return response([
-                'message'=>'it is the same old password , try again',
-                'status'=>'success'
-            ], 500);
+
+        $admin = Admin::first();
+        if(Hash::check($admin->password,$admin->password)) {
+            return error('it is the same old password , try again');
         }else {
             $admin->update([
                 'password' => Hash::make($request->password)
             ]);
-            return response([
-                'message'=>'updated pass successfully',
-                'status'=>'success'
-            ], 200);
+            return success();
         }
-    }
-
-    public function changePass (Request $request){
-        $request->validate([
-            'oldPassword' => ['required', 'min:6' , 'max:14'],
-            'newPassword' => ['required', 'min:6' , 'max:14' , 'confirmed']
-        ]);
-
-        $admin = auth()->user();
-        if(Hash::check($request->oldPassword,$admin->password)) {
-            $admin->update([
-                'password' => Hash::make($request->newPassword)
-            ]);
-            return response([
-                'message'=>'changed pass successfully',
-                'status'=>'success'
-            ], 200);
-        }
-        return response([
-            'message'=>'your old password in wronge , try again',
-            'status'=>'failed'
-        ], 500);
-
-    }
-    public function changeEmailOTP(Request $request){
-        $request->validate([
-            'password' => ['required', 'min:6' , 'max:14'],
-            'email'    => ['required', 'string', 'email', 'max:255']
-        ]);
-
-        $AdminAuth = auth()->user();
-        if(Hash::check($request->password, $AdminAuth->password)){
-
-            $admin = User::where('email', $request->email)->first();
-            if ($admin) {
-                return response([
-                    'message' => 'sorry , email dosent available'
-                ], 500);
-            }
-            $otp = Otp::identifier($request->email)->send(
-                new UserOperationsOtp(
-                    name: $AdminAuth->name,
-                    email: $request->email,
-                    password: $AdminAuth->password,
-                ),
-                Notification::route('mail', $request->email)
-            );
-            return response([
-                'message' => 'sending otp for change email',
-                'status' => 'success',
-                'new email' => $request->email,
-                $otp['status']
-            ], 200);
-        }
-        return response([
-            'message' => 'sorry , your password is wrong , please try again',
-            'status' => 'failed',
-        ], 500);
-    }
-
-    public function admin(){
-        $admin = Admin::find(1);
-        return $admin->email;
     }
 }

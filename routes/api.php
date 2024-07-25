@@ -2,10 +2,14 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\EventTypeController;
 use App\Http\Controllers\FavoriteController;
+use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\WalletController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -24,6 +28,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 Route::get('/admin',[AdminController::class ,'admin']);
+
 Route::controller(UserController::class)->group(function() {
     Route::post('/register', 'register');
     Route::post('/verRegistereOTP', 'verRegistereOTP');
@@ -33,41 +38,57 @@ Route::controller(UserController::class)->group(function() {
     Route::get('/allUsers', 'allUsers');
     Route::post('/postUser', 'postUser');
 });
+Route::apiResource('/categories', CategoryController::class)->middleware('locale');
+Route::apiResource('/event-type', EventTypeController::class)->middleware('locale');
+Route::get('/insertadmin',[AdminController::class ,'admin']);
+Route::post('/insertcompany', [CompanyController::class ,'insertcompany'] )->middleware('locale');
+
 Route::middleware(['auth:sanctum'])->group(function() {
-    Route::controller(UserController::class)->group(function() {
-        Route::post('/login','login');
-        Route::post('/logout','logout');
-        Route::post('/changePass','changePass');
-        Route::post('/resetName','resetName');
-        Route::post('/resetImage','resetImage');
-        Route::get('/loggedUser','logged_user');
-        Route::post('/changeEmailOTP' , 'changeEmailOTP');
+    Route::controller(UserController::class)->group(function () {
+        Route::post('/login', 'login');
+        Route::post('/logout', 'logout');
+        Route::post('/changePass', 'changePass');
+        Route::post('/resetName', 'resetName');
+        Route::post('/resetImage', 'resetImage');
+        Route::get('/loggedUser', 'logged_user');
+        Route::post('/changeEmailOTP', 'changeEmailOTP');
+        //Route::apiResource('/categories', CategoryController::class)->middleware('locale');
     });
-});
-    Route::middleware(['locale'])->group(function() {
-        Route::apiResource('/services', ServiceController::class);
-        Route::post('/services/{service}/update-activation', [ServiceController::class, 'updateActivation']);
-        // Route::controller(EventController::class)->group(function () {
-        //     Route::post('/insertEventType', 'insertEventType');
-        //     Route::post('/deleteEventType', 'deleteEventType');
-        //     Route::get('/showAllEventType', 'showAllEventType');
-        // });
-        // Route::controller(FavoriteController::class)->group(function () {
-        //     Route::post('/addFavorite', 'addFavorite');
-        //     Route::post('/deleteFavorite', 'deleteFavorite');
-        //     Route::get('/showfavorite', 'showfavorites');
-        // });
-        // Route::controller(CategoryController::class)->group(function () {
-        //     Route::post('/addCategory', 'addCategory');
-        //     Route::post('/deleteCategory', 'deleteCategory');
-        //     Route::post('/catServices', 'catServices');
-        //     Route::get('/showCategory', 'showCategory');
-        // });
-        // Route::controller(ServiceController::class)->group(function () {
-        //     Route::post('/addService', 'addService');
-        //     Route::post('/deleteService', 'deleteService');
-        //     Route::get('/showService/{id}', 'showService');
-        // });
+    Route::middleware('auth:company')->prefix('company')->group(function () {
+        Route::controller(CompanyController::class)->group(function () {
+            Route::post('/companies/sendOTP', 'sendOTP');
+            Route::post('/companies/verAuthOTP', 'verAuthOTP');
+            Route::post('/companies/resetPass', 'resetPass');
+            Route::post('/companies/login', 'login');
+            Route::get('/companies/logout', 'logout');
+        });
     });
+    Route::middleware('auth:company')->prefix('company')->group(function () {
+        Route::controller(AdminController::class)->group(function () {
+            Route::get('/admin/sendOTP', 'sendOTP');
+            Route::post('/admin/verAuthOTP', 'verAuthOTP');
+            Route::post('/admin/resetPass', 'resetPass');
+            Route::post('/admin/login', 'login');
+            Route::get('/admin/logout', 'logout');
+        });
+    });
+
+
+        Route::apiResource('/favorites', FavoriteController::class);
+
+        Route::apiResource('/wallets', WalletController::class);
+
+        Route::apiResource('/reviews', ReviewController::class);
+
+        Route::middleware(['locale'])->group(function () {
+
+            Route::apiResource('/companies', CompanyController::class);
+
+            Route::apiResource('/services', ServiceController::class);
+            Route::delete('/services/{service}/delete', [ServiceController::class, 'destroy']);
+            Route::post('/services/{service}/update-activation', [ServiceController::class, 'updateActivation']);
+        });
+    });
+
 
 

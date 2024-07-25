@@ -24,10 +24,8 @@ class CreateServiceRequest extends FormRequest
         return [
             'price' => 'required|numeric',
             'category_id' => 'required|exists:categories,id',
-            'ar_name' => 'required',
-            'en_name' => 'required',
-            'ar_description' => 'required',
-            'en_description' => 'required',
+            'name' => 'required',
+            'description' => 'required',
             'images' => 'required|array|min:1',
             'discounted_packages' => 'boolean',
         ];

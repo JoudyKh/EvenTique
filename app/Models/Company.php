@@ -4,11 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Kreait\Firebase\Auth as FirebaseAuth;
+use Laravel\Sanctum\HasApiTokens;
 use Spatie\Translatable\HasTranslations;
 
 class Company extends Model
 {
-    use HasFactory, HasTranslations;
+    use HasFactory, HasTranslations ,HasApiTokens;
 
     protected $fillable = [
         'first_name',
@@ -21,12 +23,8 @@ class Company extends Model
         'location',
         'city',
         'country',
-        'days',
-        'hours_from',
-        'hours_to',
         'description',
         'accept_privacy',
-        'event_type_id'
     ];
 
     public $translatable = [
@@ -35,13 +33,33 @@ class Company extends Model
         'country',
         'description',
     ];
-    static $trsnalatableAtt = [
-        'location',
-        'city',
-        'country',
-        'description',
-    ];
+    public function getFirebaseAuth()
+    {
+        return app(FirebaseAuth::class);
+    }
+
+    public function createCustomToken()
+    {
+        $firebaseAuth = $this->getFirebaseAuth();
+        $customToken = $firebaseAuth->createCustomToken($this->id);
+        return $customToken->toString();
+    }
+
+
     public function categories(){
         return $this->belongsToMany(Category::class , 'category_company_pivot');
+    }
+    public function workHours()
+    {
+        return $this->hasMany(WorkHours::class);
+    }
+    public function eventTypes(){
+        return $this->belongsToMany(EventType::class , 'eventtype_company_pivot');
+    }
+    public function companywallets(){
+        return $this->hasOne(CompanyWallet::class);
+    }
+    public function images(){
+        return $this->morphMany(Image::class, 'model');
     }
 }

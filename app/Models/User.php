@@ -64,4 +64,10 @@ class User extends Authenticatable //implements MustVerifyEmail
     {
         return $this->morphMany(Image::class, 'model');
     }
+    public function userwallets(){
+        return $this->hasOne(UserWallet::class);
+    }
+    public function reviews(){
+        return $this->hasMany(Review::class , 'user_id');
+    }
 }
